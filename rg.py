@@ -16,7 +16,7 @@ API_TOKEN = os.getenv("BOT_TOKEN")
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
 # Загружаем credentials.json (должен быть в корне проекта)
-CREDS = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
+CREDS = ServiceAccountCredentials.from_json_keyfile_name("instant-avatar-456707-q7-0d3a1711d3e1.json", SCOPE)
 client = gspread.authorize(CREDS)
 sheet = client.open("azv").sheet1  # Имя таблицы
 
