@@ -10,7 +10,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 
 # === Безопасность: берем токен из переменной окружения ===
-API_TOKEN = os.getenv("BOT_TOKEN")
+API_TOKEN = '993407575:AAFa8RG9wOrLjnDXfTOJfhsu60tXHZNENr4'
 
 # === Google Sheets Auth ===
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
