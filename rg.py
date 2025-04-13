@@ -1,5 +1,3 @@
-# bot.py
-
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -9,26 +7,29 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import os
 
-# Telegram Token
-API_TOKEN = "7993407575:AAFa8RG9wOrLjnDXfTOJfhsu60tXHZNENr4"
+# === Безопасность: берем токен из переменной окружения ===
+API_TOKEN = os.getenv("BOT_TOKEN")
 
-# Настройка Google Sheets
+# === Google Sheets Auth ===
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-CREDS = ServiceAccountCredentials.from_json_keyfile_name("instant-avatar-456707-q7-0d3a1711d3e1.json", SCOPE)
+
+# Загружаем credentials.json (должен быть в корне проекта)
+CREDS = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
 client = gspread.authorize(CREDS)
 sheet = client.open("azv").sheet1  # Имя таблицы
 
-# FSM состояние
+# === FSM состояния ===
 class Register(StatesGroup):
     name = State()
     age = State()
 
-# Создаем бота
+# === Создаем бота и диспетчер ===
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
-# Команда /start
+# === Обработчики ===
 @dp.message(Command("start"))
 async def start_handler(message: types.Message, state: FSMContext):
     await message.answer("Привет! Как тебя зовут?")
@@ -45,20 +46,19 @@ async def get_age(message: types.Message, state: FSMContext):
     user_data = await state.update_data(age=message.text)
     await state.clear()
 
-    # Сохраняем в Google Sheets
+    # Сохраняем в таблицу
     sheet.append_row([
         str(message.from_user.id),
-        user_data['name'],
-        user_data['age'],
-        datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        user_data["name"],
+        user_data["age"],
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ])
 
     await message.answer("Спасибо! Ты зарегистрирован ✅")
 
-# Запуск
+# === Запуск ===
 async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-    print("Бот запущен")
