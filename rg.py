@@ -1,4 +1,7 @@
 import asyncio
+import base64
+import json
+from io import BytesIO
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -7,34 +10,25 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import os
 
 # === Telegram Bot Token ===
-API_TOKEN = "993407575:AAFa8RG9wOrLjnDXfTOJfhsu60tXHZNENr4"
+API_TOKEN = os.getenv("BOT_TOKEN")  # задается через Railway secrets
 
-# === Google Service Account JSON (замени значения на свои из .json файла) ===
-GOOGLE_CREDENTIALS_JSON = {
-  "type": "service_account",
-  "project_id": "instant-avatar-456707-q7",
-  "private_key_id": "0d3a1711d3e1570c1efd670df49ba18865f6f279",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDTALT2Dql0qeeB\nI8mei4GjCTIhwwtnQGrFvgtnb9cSFB5L+0Hl25wdKsUC+sPJVlXw5Z4Ij7WENaGS\n3zhx8jdJir0e1pvQNrrm1vjwpRyhIIl8WDPftC8JZNVIRm5ef7HUaXT4Ve4gnPZO\nT5kkdKkr2cZCbqrhW6TJhQ4dXJLo52tK03L7Hrcst2kipS/lIjpsPQF9dkQKCxHL\nJy3qPNlXHowpgxvJaPJfZ60IVQOITtl+UNHczj0m/BeflC6adb4IAkiV78pWTcxS\nymY2m+nONpoby0k5VK/eVb0GzZowJTZhndkf86BErHKA74UkGJ318aYHj52WJOQM\nToC8zIrrAgMBAAECggEAaTxbBLV/Uo5CxifBMO/HMjct56TNlSuNlR4ZtfcTvxKF\nocOotCl5jRp9s+S5rTsAFeuPjBmQoGXXNdda4Ym6hVVKyYyjnY8OXH8vHWZcBwih\nSYD8LkBBjV/a9/cYqMzrNlN6YTkKUP234orUiFge3533wb5MP6VjZJaV2ZMIOlv5\nNVCKD+Z25Zv7720kBM2BGFWQ7FH/4Z1fQvBYVpNBIsBQyslHzwZ5pUlKRv4PR7tB\nr+pPW9S0fc7ylDb6GtCBWv6Z1Xi2XQ+Jfe4bzYjtRHWCls3pkZpvODGGLJjBAbWD\nuLA/sBi/YYrlzZ5/85rvkcDBcAsroQ4jEJNsbSdMYQKBgQDv+ghfwriAs9k/l3tu\n7c/89ifOx7L4RSBr6lJUsdl66RpNasflgewM6UodDFFvdfw5HaGHTuy13OsT1FzR\nT6O55Ob/HHpUV9CcEQnR9LvjAy1inOjCNiCg2WD/wb+L6Nrux71HRoG+ZJbdRDH/\n2yGOdvQIqWf1agIEjpVkuGm66QKBgQDhF2rSzkEpJC4lseBnFdrBHr/tkbJYgdks\n7rqJz60aPlLJ+bjblMXW2Tsv1dp1LvPk2jUlwgbOhqz27KWrUTjltJyWpsFi9sBu\nOoS+dZ+3/cgrurfa7e5sw8F7ss6CXLr47xM1iZ3fGbnz2FCUWmh1yyXAszDqwleR\nAgTijmvKswKBgQC15gQq8eIATFLEDQKW1tPsnnkWF/DklyE4K2k0oYqDy+UQAXx7\nzrsqHjr7QbcIkZoZgQhLE9wBDe9yHGoujftAkO03OlLPU7DgW1niN2uja2kfcmhL\nrdOVmLAZrLaQSnSIwgYK3LrDomNoXKS5l1QcNLZNSntuXmghJCLBMbeS4QKBgHWn\nl964kLbAgp6Ra4p2kfF/8TJshZxdwvcJkdeXBhRBn2STc1zTVtYGljlavuWhtTpa\nFI237XbmTmKDL9VsjyECVxcn8s2XzN3RGLG1Kdcyf/7bil6VH5sad3gA7pCVh+W2\nkYPaevqyp9AdsYDaAOARX5pqD5emHb9eHs+NQiqhAoGAUwhvmN0N3wtLlsoROfnB\niv9amzB6esFByLEyPAeLmgHHzbcek96b9+b4VJSu1jvREXj/RKWBTogvwh/ot/QZ\n4t6HgKqyBryUXCH3A8tjIUlPELTvXyeeyax18GKLd45mOMO8Nla/0lxSqvPNpJfH\niil7F8/Jr+EFEzt6IKP8y+0=\n-----END PRIVATE KEY-----\n",
-  "client_email": "evw-503@instant-avatar-456707-q7.iam.gserviceaccount.com",
-  "client_id": "111783288644374186080",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/evw-503%40instant-avatar-456707-q7.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
-
-# === Авторизация Google Sheets ===
+# === Google Sheets Credentials из base64 ===
 SCOPE = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds = ServiceAccountCredentials.from_json_keyfile_dict(GOOGLE_CREDENTIALS_JSON, SCOPE)
+# Получаем ключ из переменной окружения и декодируем
+base64_key = os.getenv("GOOGLE_CREDENTIALS_BASE64")
+creds_json = json.load(BytesIO(base64.b64decode(base64_key)))
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, SCOPE)
+
+# Авторизация Google Sheets
 client = gspread.authorize(creds)
-sheet = client.open("azv").sheet1  # Название таблицы
+sheet = client.open("azv").sheet1  # Имя таблицы
 
 # === FSM Состояния ===
 class Register(StatesGroup):
