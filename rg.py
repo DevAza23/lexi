@@ -24,7 +24,7 @@ SCOPE = [
 # Получаем ключ из переменной окружения и декодируем
 base64_key = os.getenv("GOOGLE_CREDENTIALS_BASE64")
 creds_json = json.load(BytesIO(base64.b64decode(base64_key)))
-creds = ServiceAccountCredentials.from_json_keyfile_dict('instant-avatar-456707-q7-8f12f07533a1.json', SCOPE)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, SCOPE)
 
 # Авторизация Google Sheets
 client = gspread.authorize(creds)
